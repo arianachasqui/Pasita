@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin</title>
+<meta name="robots" content="noindex">
+<style>
+body{font-family:system-ui,sans-serif;max-width:720px;margin:24px auto;padding:0 16px;color:#333}
+input,button{font:inherit;padding:8px 12px;margin:4px 0}button{cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.grid div{position:relative}.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}
+.grid button{position:absolute;top:4px;right:4px;background:#e2574c;color:#fff;border:0;border-radius:6px}
+#log{font-size:.9rem;color:#666;white-space:pre-line}
+</style></head><body>
+<h2>Panel de fotos 📸</h2>
+<input id="pw" type="password" placeholder="Contraseña de admin"> <button id="login">Entrar</button>
+<div id="panel" style="display:none">
+  <p>Las fotos se suben a GitHub y la página se actualiza sola en ~1 minuto.</p>
+  <input id="files" type="file" accept="image/*" multiple> <button id="up">Subir</button>
+  <div id="log"></div><div class="grid" id="grid"></div>
+</div>
+<script>
+const $=i=>document.getElementById(i);
+async function api(body){const r=await fetch('/api/admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value,...body})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j}
+async function refresh(){const {list}=await api({action:'list'});
+  $('grid').innerHTML=list.map(s=>`<div><img src="${s}"><button data-n="${s.split('/').pop()}">✕</button></div>`).join('')||'Sin fotos aún'}
+$('login').onclick=async()=>{try{await refresh();$('panel').style.display='block'}catch(e){alert('Contraseña incorrecta o falta configurar variables ('+e.message+')')}};
+$('grid').onclick=async e=>{const n=e.target.dataset.n;if(!n||!confirm('¿Borrar esta foto?'))return;
+  try{await api({action:'delete',name:n});await refresh()}catch(x){alert(x.message)}};
+function compress(file){return new Promise(res=>{const img=new Image();img.onload=()=>{const m=1600,s=Math.min(1,m/Math.max(img.width,img.height));
+  const c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  res(c.toDataURL('image/jpeg',.82).split(',')[1])};img.src=URL.createObjectURL(file)})}
+$('up').onclick=async()=>{const fs=[...$('files').files];if(!fs.length)return;$('up').disabled=true;$('log').textContent='';
+  for(const f of fs){try{const name=Date.now()+'-'+f.name.replace(/\.[^.]+$/,'').replace(/[^a-z0-9]/gi,'_').slice(0,30)+'.jpg';
+    await api({action:'upload',name,content:await compress(f)});$('log').textContent+='✔ '+f.name+'\n'}catch(e){$('log').textContent+='✘ '+f.name+': '+e.message+'\n'}}
+  $('up').disabled=false;$('files').value='';refresh()};
+</script></body></html>
