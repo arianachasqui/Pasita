@@ -43,13 +43,7 @@ iframe,video{width:min(92vw,560px);aspect-ratio:16/9;border:0;border-radius:16px
 <section class="page on" id="p1">
   <h1 data-k="p1Title"></h1><div class="big" data-img="p1">🐶💌</div>
   <p data-k="p1Text"></p>
-  <div class="row"><button class="btn" onclick="go('p2')">Sí</button><button class="btn" id="no">No</button></div>
-</section>
-
-<section class="page" id="p2">
-  <h1 data-k="p2Title"></h1><div class="big" data-img="p2">🥺💗</div>
-  <p data-k="p2Text"></p>
-  <button class="btn" onclick="go('p3')">Sí</button>
+  <div class="row"><button class="btn" onclick="go('p3')">Sí</button><button class="btn" id="no">No</button></div>
 </section>
 
 <section class="page" id="p3">
@@ -85,7 +79,6 @@ iframe,video{width:min(92vw,560px);aspect-ratio:16/9;border:0;border-radius:16px
 const $=id=>document.getElementById(id), seen=new Set();
 const DEFAULTS={
  p1Title:"Feliz cumpleaños mi niña",p1Text:"¿Quieres ver el regalo que hice para ti?",
- p2Title:"Pero lo hice para ti...",p2Text:"¿Le das una oportunidad?",
  p3Title:"Te amo mi amor!!!",p3Text:"Este sitio web es solo para ti!",
  giftsTitle:"Regalos para ti!",
  songTitle:"Te dedico esta canción",songYoutubeId:"",songText:"Te dedico esta canción porque cada palabra me hace pensar en ti.",
