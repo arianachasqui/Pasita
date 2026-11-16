@@ -42,15 +42,14 @@ input,textarea{font-size:16px}button{min-height:40px}
 const $=i=>document.getElementById(i);
 const FIELDS=[
  ['p1Title','Pantalla 1 – Título','text'],['p1Text','Pantalla 1 – Pregunta','text'],
- ['p2Title','Pantalla 2 – Título','text'],['p2Text','Pantalla 2 – Pregunta','text'],
- ['p3Title','Pantalla 3 – Título','text'],['p3Text','Pantalla 3 – Frase','text'],
+ ['p3Title','Pantalla 2 – Título','text'],['p3Text','Pantalla 2 – Frase','text'],
  ['giftsTitle','Regalos – Título','text'],
  ['songTitle','Canción – Título','text'],['songYoutubeId','Canción – Link de YouTube','yt'],['songText','Canción – Texto','area'],
  ['letterTitle','Carta – Título','text'],['letter','Carta – Texto','area'],
  ['photosTitle','Fotos – Título','text'],
  ['reasonsTitle','Razones – Título','text'],['reasons','Razones (una por línea)','lines'],
  ['cakeTitle','Vela – Título','text'],['cakeEnd','Vela – Mensaje final','text']];
-const SLOTS=[['p1','Pantalla 1'],['p2','Pantalla 2'],['p3','Pantalla 3'],['gsong','Regalo: Canción'],['gletter','Regalo: Carta'],['gphotos','Regalo: Fotos'],['greasons','Regalo: Razones'],['cake','Pantalla de la vela']];
+const SLOTS=[['p1','Pantalla 1'],['p3','Pantalla 2'],['gsong','Regalo: Canción'],['gletter','Regalo: Carta'],['gphotos','Regalo: Fotos'],['greasons','Regalo: Razones'],['cake','Pantalla de la vela']];
 let cfg={};
 const LS='cumple-admin';let GH={};
 const hdr=()=>({Authorization:'Bearer '+GH.token,Accept:'application/vnd.github+json','Content-Type':'application/json'});
