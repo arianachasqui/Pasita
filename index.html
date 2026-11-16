@@ -37,6 +37,7 @@ iframe,video{width:min(92vw,560px);aspect-ratio:16/9;border:0;border-radius:16px
 .hearts span{position:absolute;bottom:-40px;animation:up linear forwards}
 @keyframes up{to{transform:translateY(-110vh) rotate(40deg);opacity:0}}
 .hint{font-size:1rem;opacity:.7}
+[data-img="letterImg"]:empty{display:none}
 </style></head><body>
 <div class="hearts" id="hearts"></div>
 
@@ -65,7 +66,7 @@ iframe,video{width:min(92vw,560px);aspect-ratio:16/9;border:0;border-radius:16px
 </section>
 
 <section class="page" id="song"><h1 data-k="songTitle"></h1><div id="yt"></div><div class="card" data-k="songText"></div><button class="btn" onclick="const v=document.querySelector('#yt video');if(v)v.pause();go('p4')">Volver</button></section>
-<section class="page" id="letter"><h1 data-k="letterTitle"></h1><div class="card" data-k="letter"></div><button class="btn" onclick="go('p4')">Volver</button></section>
+<section class="page" id="letter"><h1 data-k="letterTitle"></h1><div data-img="letterImg"></div><div class="card" data-k="letter"></div><button class="btn" onclick="go('p4')">Volver</button></section>
 <section class="page" id="photos"><h1 data-k="photosTitle"></h1><div class="wall" id="wall"></div><button class="btn" onclick="go('p4')">Volver</button></section>
 <section class="page" id="reasons"><h1 data-k="reasonsTitle"></h1><div class="reasons" id="rs"></div><button class="btn" onclick="go('p4')">Volver</button></section>
 
@@ -92,7 +93,7 @@ function render(){
   document.querySelectorAll('[data-k]').forEach(e=>e.textContent=C[e.dataset.k]);
   $('rs').innerHTML=''; C.reasons.forEach(r=>{const d=document.createElement('div');d.textContent='💗 '+r;$('rs').appendChild(d)});
   document.querySelectorAll('[data-img]').forEach(e=>{const u=(C.images||{})[e.dataset.img];
-    if(u){const fl=e.dataset.img==='cake'?$('flame'):null;const isG=/^g/.test(e.dataset.img);e.innerHTML='';const i=document.createElement('img');i.src=u;i.style.cssText=isG?'display:block;margin:0 auto 6px;width:100%;max-width:110px;height:110px;object-fit:cover;border-radius:14px':'max-width:220px;max-height:220px;border-radius:16px';e.appendChild(i);if(fl){e.style.position='relative';e.appendChild(fl)}e.classList.remove('big')}});
+    if(u){const fl=e.dataset.img==='cake'?$('flame'):null;const isG=/^g/.test(e.dataset.img);e.innerHTML='';const i=document.createElement('img');i.src=u;i.style.cssText=isG?'display:block;margin:0 auto 6px;width:auto;height:auto;max-width:100%;max-height:130px;object-fit:contain;border-radius:14px':(e.dataset.img==='letterImg'?'max-width:min(90vw,360px);max-height:360px;border-radius:16px':'max-width:220px;max-height:220px;border-radius:16px');e.appendChild(i);if(fl){e.style.position='relative';e.appendChild(fl)}e.classList.remove('big')}});
 }
 fetch('config.json?'+Date.now()).then(r=>r.json()).catch(()=>({})).then(j=>{C={...DEFAULTS,...j,images:{...(j.images||{})}};render()});
 fetch('photos.json?'+Date.now()).then(r=>r.json()).then(l=>{
