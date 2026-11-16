@@ -22,8 +22,9 @@ p{font-size:1.25rem;margin:0}
 .gift small{display:block;font-size:1.1rem;color:var(--ink)}
 .gift:hover{transform:rotate(-3deg) scale(1.05)}
 .gift.done{opacity:.55}
+@media(max-width:420px){.gift{padding:12px}.big{font-size:5rem}.btn{padding:10px 22px}}
 .card{background:#fff;border:3px dotted var(--pink);border-radius:18px;padding:22px;max-width:560px;white-space:pre-line;box-shadow:0 8px 24px #e2574c22}
-iframe{width:min(92vw,560px);aspect-ratio:16/9;border:0;border-radius:16px}
+iframe,video{width:min(92vw,560px);aspect-ratio:16/9;border:0;border-radius:16px;background:#000}
 .wall{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:900px}
 .wall img{width:min(44vw,220px);padding:8px 8px 22px;background:#fff;border:2px solid var(--pink);border-radius:6px;box-shadow:0 6px 14px #0002;object-fit:cover;aspect-ratio:1}
 .wall img:nth-child(odd){transform:rotate(-3deg)}.wall img:nth-child(even){transform:rotate(3deg)}
@@ -60,16 +61,16 @@ iframe{width:min(92vw,560px);aspect-ratio:16/9;border:0;border-radius:16px}
 <section class="page" id="p4">
   <h1 data-k="giftsTitle"></h1>
   <div class="gifts">
-    <div class="gift" data-g="song">🎧<small>Canción</small></div>
-    <div class="gift" data-g="letter">💌<small>Carta</small></div>
-    <div class="gift" data-g="photos">📸<small>Fotos</small></div>
-    <div class="gift" data-g="reasons">🌹<small>Razones</small></div>
+    <div class="gift" data-g="song"><span data-img="gsong">🎧</span><small>Canción</small></div>
+    <div class="gift" data-g="letter"><span data-img="gletter">💌</span><small>Carta</small></div>
+    <div class="gift" data-g="photos"><span data-img="gphotos">📸</span><small>Fotos</small></div>
+    <div class="gift" data-g="reasons"><span data-img="greasons">🌹</span><small>Razones</small></div>
   </div>
   <p class="hint">Haz click en cada regalo</p>
   <button class="btn" id="toCake" style="display:none" onclick="go('cake')">Un último detalle 🎂</button>
 </section>
 
-<section class="page" id="song"><h1 data-k="songTitle"></h1><div id="yt"></div><div class="card" data-k="songText"></div><button class="btn" onclick="go('p4')">Volver</button></section>
+<section class="page" id="song"><h1 data-k="songTitle"></h1><div id="yt"></div><div class="card" data-k="songText"></div><button class="btn" onclick="const v=document.querySelector('#yt video');if(v)v.pause();go('p4')">Volver</button></section>
 <section class="page" id="letter"><h1 data-k="letterTitle"></h1><div class="card" data-k="letter"></div><button class="btn" onclick="go('p4')">Volver</button></section>
 <section class="page" id="photos"><h1 data-k="photosTitle"></h1><div class="wall" id="wall"></div><button class="btn" onclick="go('p4')">Volver</button></section>
 <section class="page" id="reasons"><h1 data-k="reasonsTitle"></h1><div class="reasons" id="rs"></div><button class="btn" onclick="go('p4')">Volver</button></section>
@@ -98,7 +99,7 @@ function render(){
   document.querySelectorAll('[data-k]').forEach(e=>e.textContent=C[e.dataset.k]);
   $('rs').innerHTML=''; C.reasons.forEach(r=>{const d=document.createElement('div');d.textContent='💗 '+r;$('rs').appendChild(d)});
   document.querySelectorAll('[data-img]').forEach(e=>{const u=(C.images||{})[e.dataset.img];
-    if(u){const fl=e.dataset.img==='cake'?$('flame'):null;e.innerHTML='';const i=document.createElement('img');i.src=u;i.style.cssText='max-width:220px;max-height:220px;border-radius:16px';e.appendChild(i);if(fl){e.style.position='relative';e.appendChild(fl)}e.classList.remove('big')}});
+    if(u){const fl=e.dataset.img==='cake'?$('flame'):null;const isG=/^g/.test(e.dataset.img);e.innerHTML='';const i=document.createElement('img');i.src=u;i.style.cssText=isG?'display:block;margin:0 auto 6px;width:100%;max-width:110px;height:110px;object-fit:cover;border-radius:14px':'max-width:220px;max-height:220px;border-radius:16px';e.appendChild(i);if(fl){e.style.position='relative';e.appendChild(fl)}e.classList.remove('big')}});
 }
 fetch('config.json?'+Date.now()).then(r=>r.json()).catch(()=>({})).then(j=>{C={...DEFAULTS,...j,images:{...(j.images||{})}};render()});
 fetch('photos.json?'+Date.now()).then(r=>r.json()).then(l=>{
@@ -108,7 +109,8 @@ function dodge(){no.style.left=(Math.random()*160-80)+'px';no.style.top=(Math.ra
 no.onmouseenter=dodge;no.onclick=dodge;no.ontouchstart=e=>{e.preventDefault();dodge()};
 document.querySelectorAll('.gift').forEach(g=>g.onclick=()=>{
   const k=g.dataset.g;
-  if(k==='song'&&!$('yt').innerHTML&&C.songYoutubeId)$('yt').innerHTML=`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(C.songYoutubeId)}" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
+  if(k==='song'&&!$('yt').innerHTML&&C.songVideo)$('yt').innerHTML=`<video src="${C.songVideo}" controls playsinline preload="metadata"></video>`;
+  else if(k==='song'&&!$('yt').innerHTML&&C.songYoutubeId)$('yt').innerHTML=`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(C.songYoutubeId)}" allow="autoplay;encrypted-media" allowfullscreen></iframe>`;
   seen.add(k);g.classList.add('done');if(seen.size>=4)$('toCake').style.display='';go(k)});
 function hearts(n=24){for(let i=0;i<n;i++){const s=document.createElement('span');s.textContent=['💗','💖','🎉','✨','🎈'][i%5];
   s.style.left=Math.random()*100+'vw';s.style.fontSize=(18+Math.random()*26)+'px';s.style.animationDuration=(3+Math.random()*3)+'s';
