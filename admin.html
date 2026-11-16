@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin</title>
+<meta name="robots" content="noindex">
+<style>
+body{font-family:system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px 80px;color:#333}
+input,textarea,button{font:inherit;padding:8px 12px;margin:4px 0;width:100%;box-sizing:border-box}
+button{cursor:pointer;width:auto}textarea{min-height:90px}
+label{display:block;font-weight:600;margin-top:12px;font-size:.9rem}
+h3{margin-top:32px;border-bottom:2px solid #f6c9d0;padding-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:12px}
+.grid div{position:relative}.grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}
+.grid button{position:absolute;top:4px;right:4px;background:#e2574c;color:#fff;border:0;border-radius:6px}
+.slot{display:flex;gap:10px;align-items:center;margin:8px 0}.slot img{width:60px;height:60px;object-fit:cover;border-radius:8px;background:#eee}
+.slot input{width:auto;flex:1}.save{position:fixed;bottom:14px;right:14px;background:#e2574c;color:#fff;border:0;border-radius:999px;padding:12px 24px;box-shadow:0 4px 14px #0004;z-index:5}
+#log{font-size:.9rem;color:#666;white-space:pre-line}
+</style></head><body>
+<h2>Panel de administración 💗</h2>
+<div id="loginBox">
+  <label>Repositorio de GitHub (usuario/repo)</label><input id="repo" placeholder="tuusuario/mi-repo">
+  <label>Rama</label><input id="branch" placeholder="main" value="main">
+  <label>Token de GitHub</label><input id="token" type="password" placeholder="github_pat_...">
+  <p style="font-size:.85rem;color:#666">Se guarda solo en este navegador. Debe ser un token con permiso <b>Contents: Read and write</b> sobre ese repo.</p>
+  <button id="login">Entrar</button>
+</div>
+<button id="logout" style="display:none;float:right">Cerrar sesión</button>
+<div id="panel" style="display:none">
+  <h3>📝 Textos</h3><div id="fields"></div>
+  <h3>🖼️ Imágenes de cada pantalla</h3>
+  <p style="font-size:.9rem;color:#666">Reemplazan los emojis. Si no subes nada, se queda el emoji.</p><div id="slots"></div>
+  <h3>📸 Fotos de la galería</h3>
+  <input id="files" type="file" accept="image/*" multiple><button id="up">Subir fotos</button>
+  <div id="log"></div><div class="grid" id="grid"></div>
+  <button class="save" id="save">💾 Guardar textos</button>
+</div>
+<script>
+const $=i=>document.getElementById(i);
+const FIELDS=[
+ ['p1Title','Pantalla 1 – Título','text'],['p1Text','Pantalla 1 – Pregunta','text'],
+ ['p2Title','Pantalla 2 – Título','text'],['p2Text','Pantalla 2 – Pregunta','text'],
+ ['p3Title','Pantalla 3 – Título','text'],['p3Text','Pantalla 3 – Frase','text'],
+ ['giftsTitle','Regalos – Título','text'],
+ ['songTitle','Canción – Título','text'],['songYoutubeId','Canción – Link de YouTube','yt'],['songText','Canción – Texto','area'],
+ ['letterTitle','Carta – Título','text'],['letter','Carta – Texto','area'],
+ ['photosTitle','Fotos – Título','text'],
+ ['reasonsTitle','Razones – Título','text'],['reasons','Razones (una por línea)','lines'],
+ ['cakeTitle','Vela – Título','text'],['cakeEnd','Vela – Mensaje final','text']];
+const SLOTS=[['p1','Pantalla 1'],['p2','Pantalla 2'],['p3','Pantalla 3'],['cake','Pantalla de la vela']];
+let cfg={};
+const LS='cumple-admin';let GH={};
+const hdr=()=>({Authorization:'Bearer '+GH.token,Accept:'application/vnd.github+json','Content-Type':'application/json'});
+const gurl=p=>`https://api.github.com/repos/${GH.repo}/contents/${p}`;
+const enc=s=>{const b=new TextEncoder().encode(s);let x='';for(let i=0;i<b.length;i+=8192)x+=String.fromCharCode(...b.subarray(i,i+8192));return btoa(x)};
+const b64=o=>enc(JSON.stringify(o,null,2));
+const parse=f=>JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(f.content.replace(/\n/g,'')),c=>c.charCodeAt(0))));
+async function gh(r){if(r.ok)return r;let m=await r.text();try{m=JSON.parse(m).message||m}catch{}
+  throw new Error(r.status===401?'Token inválido o vencido':r.status===403?'Sin permisos de escritura ('+m+')':'GitHub: '+String(m).slice(0,200))}
+async function get(p){const r=await fetch(`${gurl(p)}?ref=${encodeURIComponent(GH.branch)}&t=${Date.now()}`,{headers:hdr()});
+  if(r.status===404)return null;await gh(r);return r.json()}
+async function put(p,content,message,sha){await gh(await fetch(gurl(p),{method:'PUT',headers:hdr(),body:JSON.stringify({message,content,branch:GH.branch,sha})}))}
+async function manifest(){const f=await get('photos.json');return{sha:f?.sha,list:f?parse(f):[]}}
+async function api(b){
+  const {action,name,content,asset,config}=b;const safe=String(name||'').replace(/[^a-zA-Z0-9._-]/g,'');
+  if(action==='list')return manifest();
+  if(action==='getConfig'){const f=await get('config.json');return{config:f?parse(f):{}}}
+  if(action==='saveConfig'){if(!config||typeof config!=='object')throw new Error('Config inválida');
+    const f=await get('config.json');await put('config.json',b64(config),'Actualizar textos',f?.sha);return{ok:true}}
+  if(action==='upload'){if(!safe||!content)throw new Error('Datos incompletos');
+    await put(`photos/${safe}`,content,`Subir ${safe}`);
+    if(!asset){const m=await manifest();m.list.push(`/photos/${safe}`);await put('photos.json',b64(m.list),'Actualizar fotos',m.sha)}
+    return{ok:true}}
+  if(action==='delete'){const f=await get(`photos/${safe}`);
+    if(f)await gh(await fetch(gurl(`photos/${safe}`),{method:'DELETE',headers:hdr(),body:JSON.stringify({message:`Borrar ${safe}`,sha:f.sha,branch:GH.branch})}));
+    const m=await manifest();await put('photos.json',b64(m.list.filter(s=>!s.endsWith('/'+safe))),'Actualizar fotos',m.sha);return{ok:true}}
+  throw new Error('Acción inválida')}
+function ytId(v){const m=String(v).match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);return m?m[1]:String(v).trim()}
+function drawFields(){
+  $('fields').innerHTML=FIELDS.map(([k,l,t])=>{
+    let v=cfg[k]; if(k==='reasons')v=(v||[]).join('\n'); if(k==='songYoutubeId'&&v)v='https://youtu.be/'+v;
+    const val=String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    return `<label>${l}</label>`+(t==='text'||t==='yt'?`<input data-k="${k}" value="${val.replace(/"/g,'&quot;')}">`:`<textarea data-k="${k}">${val}</textarea>`)}).join('');
+  $('slots').innerHTML=SLOTS.map(([s,l])=>{const u=(cfg.images||{})[s];
+    return `<div class="slot"><img src="${u||''}" alt=""><div style="flex:1"><b>${l}</b><input type="file" accept="image/*" data-s="${s}"></div>${u?`<button data-r="${s}">Quitar</button>`:''}</div>`}).join('')}
+function readFields(){
+  document.querySelectorAll('[data-k]').forEach(e=>{const k=e.dataset.k;let v=e.value;
+    if(k==='reasons')v=v.split('\n').map(x=>x.trim()).filter(Boolean); if(k==='songYoutubeId')v=ytId(v);
+    if(v===''||(Array.isArray(v)&&!v.length))delete cfg[k];else cfg[k]=v})}
+async function saveCfg(){readFields();await api({action:'saveConfig',config:cfg})}
+async function refresh(){const {list}=await api({action:'list'});
+  $('grid').innerHTML=list.map(s=>`<div><img src="${s}"><button data-n="${s.split('/').pop()}">✕</button></div>`).join('')||'Sin fotos aún'}
+function compress(file,max,png){return new Promise(res=>{const img=new Image();img.onload=()=>{const s=Math.min(1,max/Math.max(img.width,img.height));
+  const c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  res(c.toDataURL(png?'image/png':'image/jpeg',.82).split(',')[1])};img.src=URL.createObjectURL(file)})}
+async function enter(){
+  GH={repo:$('repo').value.trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/$/,''),branch:$('branch').value.trim()||'main',token:$('token').value.trim()};
+  if(!/^[\w.-]+\/[\w.-]+$/.test(GH.repo))throw new Error('El repositorio debe tener el formato usuario/repo');
+  if(!GH.token)throw new Error('Falta el token');
+  const rr=await fetch('https://api.github.com/repos/'+GH.repo,{headers:hdr()});
+  if(rr.status===404)throw new Error('No se encontró el repo (o el token no tiene acceso a él)');
+  await gh(rr);const info=await rr.json();
+  if(info.permissions&&!info.permissions.push)throw new Error('El token no tiene permiso de escritura en este repo');
+  const r=await api({action:'getConfig'});cfg=r.config||{};
+  localStorage.setItem(LS,JSON.stringify(GH));
+  drawFields();await refresh();$('panel').style.display='block';$('loginBox').style.display='none';$('logout').style.display='block'}
+$('login').onclick=()=>enter().catch(e=>alert(e.message));
+$('logout').onclick=()=>{localStorage.removeItem(LS);location.reload()};
+try{const s=JSON.parse(localStorage.getItem(LS)||'null');if(s){$('repo').value=s.repo;$('branch').value=s.branch;$('token').value=s.token;enter().catch(()=>{})}}catch{}
+$('save').onclick=async()=>{try{await saveCfg();alert('Guardado ✔ La página se actualiza en ~1 minuto')}catch(e){alert(e.message)}};
+$('slots').onchange=async e=>{const s=e.target.dataset.s,f=e.target.files[0];if(!s||!f)return;
+  try{readFields();const png=f.type==='image/png',name='img-'+s+'-'+Date.now()+(png?'.png':'.jpg');
+    await api({action:'upload',asset:true,name,content:await compress(f,800,png)});
+    cfg.images={...(cfg.images||{}),[s]:'/photos/'+name};await saveCfg();drawFields();alert('Imagen guardada ✔')}catch(x){alert(x.message)}};
+$('slots').onclick=async e=>{const s=e.target.dataset.r;if(!s)return;readFields();delete cfg.images[s];try{await saveCfg();drawFields()}catch(x){alert(x.message)}};
+$('grid').onclick=async e=>{const n=e.target.dataset.n;if(!n||!confirm('¿Borrar esta foto?'))return;
+  try{await api({action:'delete',name:n});await refresh()}catch(x){alert(x.message)}};
+$('up').onclick=async()=>{const fs=[...$('files').files];if(!fs.length)return;$('up').disabled=true;$('log').textContent='';
+  for(const f of fs){try{const name=Date.now()+'-'+f.name.replace(/\.[^.]+$/,'').replace(/[^a-z0-9]/gi,'_').slice(0,30)+'.jpg';
+    await api({action:'upload',name,content:await compress(f,1600,false)});$('log').textContent+='✔ '+f.name+'\n'}catch(e){$('log').textContent+='✘ '+f.name+': '+e.message+'\n'}}
+  $('up').disabled=false;$('files').value='';refresh()};
+</script></body></html>
